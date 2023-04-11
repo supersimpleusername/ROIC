@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Apr  6 16:32:52 2023
+
+@author: SimpleU
+"""
+from DD_overall import DD
+import re
+import json
+import requests
+from bs4 import BeautifulSoup
+from gazpacho import Soup
+import pandas as pd
+import numpy as np
+####
+#get list of all stocks
+Nasdaq_list=pd.read_csv("nasdaq_1.csv")
+NLen=Nasdaq_list.shape[0]
+SUM_pick=pd.DataFrame({'Ticker':[NLen],'freeCashFlow_RA':[NLen],'freeCashFlow_A':[NLen],'netChangeInCash_A':[NLen],'preferredStock_M':[NLen],'revenue':[NLen],'revenue_A':[NLen],'grossProfit_A':[NLen],'ebitda':[NLen],'eps':[NLen],'netIncome':[NLen],'dividendsPaid_A':[NLen],'Score':[NLen]})
+tmp=SUM_pick
+#test each stock by DD_basic
+j=0
+for k in range(Nasdaq_list.shape[0]):
+    print(NLen)
+    print(Nasdaq_list['Symbol'].iloc[j])
+    print(j)
+    ticker=Nasdaq_list['Symbol'].iloc[j]
+    overall=DD(ticker)
+    freeCashFlow_RA=overall['freeCashFlow'].rolling(4).mean()
+    rev=overall[['revenue']].iloc[0]
+    rev_A=overall[['revenue']].mean()
+    if j <1:
+# data simplification
+        SUM_pick['Ticker'].iloc[j]=overall['symbol'].iloc[j]
+        SUM_pick['freeCashFlow_RA']=freeCashFlow_RA.iloc[3]
+        SUM_pick['freeCashFlow_A']=overall['freeCashFlow'].mean()
+        SUM_pick['netChangeInCash_A']=overall['netChangeInCash'].mean()
+        SUM_pick['preferredStock_M']=overall['preferredStock'].max()
+        SUM_pick['revenue_A']=rev_A.max()
+        SUM_pick['revenue']=rev.max()
+        SUM_pick['netChangeInCash_A']=overall['netChangeInCash'].mean()
+        SUM_pick['grossProfit_A']=overall['grossProfit'].mean()
+        SUM_pick['ebitda']=overall['ebitda'].mean()
+        SUM_pick['eps']=overall['eps'].mean()
+        SUM_pick['netIncome']=overall['netIncome'].mean()
+        SUM_pick['dividendsPaid_A']=overall['dividendsPaid'].mean()
+        SUM_pick['Score']=SUM_pick['freeCashFlow_RA'].iloc[0]+(SUM_pick['revenue']+SUM_pick['revenue_A'])/2+SUM_pick['eps'].iloc[0]+SUM_pick['ebitda'].iloc[0]+(SUM_pick['grossProfit_A'].iloc[0]+overall['netChangeInCash'].iloc[0])/2
+        tmp0=SUM_pick
+    else:
+        try:
+            tmp['freeCashFlow_RA']=freeCashFlow_RA.iloc[3]
+        except:
+            tmp['freeCashFlow_RA']=-9999
+        tmp['Ticker']=overall['symbol']
+        tmp['freeCashFlow_A']=overall['freeCashFlow'].mean()
+        tmp['netChangeInCash_A']=overall['netChangeInCash'].mean()
+        tmp['preferredStock_M']=overall['preferredStock'].max()
+        rev=overall[['revenue']].iloc[0]
+        rev_A=overall[['revenue']].mean()
+        tmp['revenue_A']=rev_A.max()
+        tmp['revenue']=rev.max()
+        tmp['netChangeInCash_A']=overall['netChangeInCash'].mean()
+        tmp['grossProfit_A']=overall['grossProfit'].mean()
+        tmp['ebitda']=overall['ebitda'].mean()
+        tmp['eps']=overall['eps'].mean()
+        tmp['netIncome']=overall['netIncome'].mean()
+        tmp['dividendsPaid_A']=overall['dividendsPaid'].mean()
+        tmp['Score']=tmp['freeCashFlow_RA'].iloc[0]+(tmp['revenue']+tmp['revenue_A'])/2+tmp['eps'].iloc[0]+tmp['ebitda'].iloc[0]+(tmp['grossProfit_A'].iloc[0]+overall['netChangeInCash'].iloc[0])/2      
+       #df.append(new_row, ignore_index=True)
+        SUM_pick=SUM_pick.append(tmp, ignore_index=True)
+    print(SUM_pick['Score'].iloc[j])
+#    if j>10:
+#        exit()
+    j=j+1
+SUM_pick.to_csv("dump_data.csv")
